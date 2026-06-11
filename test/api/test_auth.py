@@ -145,10 +145,10 @@ class TestGetMe:
 # ---------------------------------------------------------------------------
 
 class TestPatchMe:
-    @patch("app.api.v1.endpoints.auth.fetch_app_profile")
     @patch("app.api.v1.endpoints.auth.apply_admin_bootstrap")
-    @patch("app.api.v1.endpoints.auth.supabase_admin")
-    def test_patch_me_success(self, mock_admin, mock_bootstrap, mock_fetch, client, auth_headers):
+    @patch("app.api.v1.endpoints.auth.update_rows")
+    @patch("app.api.v1.endpoints.auth.select_rows")
+    def test_patch_me_success(self, mock_select, mock_update, mock_bootstrap, client, auth_headers):
         prof1 = {
             "id_utilisateur": "u-1",
             "email": "test@example.com",
@@ -163,7 +163,8 @@ class TestPatchMe:
             "objectifs": [],
         }
         prof2 = {**prof1, "prenom": "Jean", "type_abonnement": "premium"}
-        mock_fetch.side_effect = [prof1, prof2]
+        mock_select.side_effect = [[prof1], [prof2]]
+        mock_update.return_value = None
         mock_bootstrap.side_effect = lambda e, p, s: p
 
         response = client.patch(
@@ -176,8 +177,9 @@ class TestPatchMe:
         assert data["prenom"] == "Jean"
         assert data["type_abonnement"] == "premium"
 
-    @patch("app.api.v1.endpoints.auth.fetch_app_profile", return_value=None)
-    def test_patch_me_no_profile(self, _fetch, client, auth_headers):
+    @patch("app.api.v1.endpoints.auth.insert_row", return_value=None)
+    @patch("app.api.v1.endpoints.auth.select_rows", return_value=[])
+    def test_patch_me_no_profile(self, _select, _insert, client, auth_headers):
         r = client.patch(
             "/api/v1/auth/me",
             headers=auth_headers,

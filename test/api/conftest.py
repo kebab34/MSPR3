@@ -39,7 +39,16 @@ with patch("supabase.create_client", return_value=_mock_supabase):
             "profile": {"app_role": "admin", "id_utilisateur": "00000000-0000-0000-0000-000000000001"},
         }
 
+    async def _fake_get_current_profile():
+        return {
+            "id": "user-test-uuid-1234",
+            "email": "test@example.com",
+            "id_utilisateur": "00000000-0000-0000-0000-000000000001",
+            "app_role": "user",
+        }
+
     app.dependency_overrides[_deps.require_admin] = _fake_require_admin
+    app.dependency_overrides[_deps.get_current_profile] = _fake_get_current_profile
 
 
 @pytest.fixture
@@ -60,6 +69,7 @@ def mock_db(monkeypatch):
     import app.core.database as dbc
     monkeypatch.setattr(dbc, "get_supabase_admin", lambda: mock_admin)
     monkeypatch.setattr(dbc, "get_supabase", lambda: mock_supa)
+    monkeypatch.setattr(dbc, "create_client", lambda url, key: mock_admin)
     return mock_supa, mock_admin
 
 
