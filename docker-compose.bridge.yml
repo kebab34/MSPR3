@@ -1,0 +1,92 @@
+# Réseau bridge isolé (DNS entre conteneurs : http://api:8000).
+# Utiliser si `docker compose up` fonctionne chez toi ; sinon le docker-compose.yml
+# par défaut est en network_mode: host (Linux, contourne souvent les bugs iptables Docker).
+#
+#   docker compose -f docker-compose.bridge.yml up -d --build
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: mspr_api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+    volumes:
+      - ./api:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - etl
+    networks:
+      - mspr_network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: mspr_web
+    ports:
+      - "${WEB_PORT:-8000}:3000"
+    environment:
+      - API_URL=http://api:8000
+      - ML_API_URL=http://ml_service:8000
+    depends_on:
+      - api
+      - ml_service
+    networks:
+      - mspr_network
+
+  ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: mspr_ml_service
+    ports:
+      - "8002:8000"
+    environment:
+      - ML_DATASET_PATH=/app/data/diet_recommendations_dataset.csv
+      - ML_TRAIN_TOKEN=${ML_TRAIN_TOKEN:-}
+    volumes:
+      - ./ml_service:/app
+      - ./etl/data:/app/data
+    depends_on:
+      - etl
+    networks:
+      - mspr_network
+
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    container_name: mspr_etl
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - ETL_SCHEDULE=${ETL_SCHEDULE:-0 */6 * * *}
+    volumes:
+      - ./etl:/app
+      - ./etl/data:/app/data
+    command: python scheduler.py
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+networks:
+  mspr_network:
+    driver: bridge
+
+volumes:
+  etl_data:
+    driver: local

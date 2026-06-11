@@ -1,0 +1,108 @@
+services:
+  # API FastAPI
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: mspr_api
+    # network_mode: host → accès direct à internet (fix iptables NAT cassé sur Linux)
+    # Le conteneur écoute directement sur le port hôte 8001, pas de mapping nécessaire.
+    network_mode: host
+    environment:
+      # Tout vient du `.env` : cloud (https://xxx.supabase.co) ou local (host.docker.internal).
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+    volumes:
+      - ./api:/app
+    # Port 8001 directement sur l'hôte (network_mode: host → pas de mapping)
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${API_HOST_PORT:-8001}
+    depends_on:
+      - etl
+    restart: unless-stopped
+
+  # Interface web Next.js (proxy API vers le service `api` / IA microservice)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: mspr_web
+    # Linux : réseau bridge entre conteneurs souvent bloqué par iptables.
+    # On passe par l'hôte (host.docker.internal:8001) plutôt que le DNS Docker interne.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Hôte : défaut 8000. Si pris (Next dev, etc.), ex. WEB_PORT=8082 docker compose up -d
+      - "${WEB_PORT:-8000}:3000"
+    environment:
+      - API_URL=http://host.docker.internal:${API_HOST_PORT:-8001}
+      - ML_API_URL=http://host.docker.internal:${ML_PORT:-8003}
+    depends_on:
+      - api
+      - ml_service
+    restart: unless-stopped
+    networks:
+      - mspr_network
+
+  # Microservice IA pour recommandations diététiques
+  ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: mspr_ml_service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${ML_PORT:-8003}:8000"
+    environment:
+      - ML_DATASET_PATH=/app/data/diet_recommendations_dataset.csv
+      - ML_TRAIN_TOKEN=${ML_TRAIN_TOKEN:-}
+      - HUGGINGFACE_API_TOKEN=${HUGGINGFACE_API_TOKEN:-}
+      - HUGGINGFACE_MODEL=${HUGGINGFACE_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}
+    volumes:
+      - ./ml_service:/app
+      - ./etl/data:/app/data
+    depends_on:
+      - etl
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+  # Service ETL
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    container_name: mspr_etl
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME:-}
+      - KAGGLE_KEY=${KAGGLE_KEY:-}
+      # Planification cron (5 champs). Défaut : lundi 02h00 UTC.
+      - ETL_SCHEDULE=${ETL_SCHEDULE:-0 2 * * 1}
+    volumes:
+      - ./etl:/app
+      - ./etl/data:/app/data
+      - ./etl/logs:/app/logs
+    command: python scheduler.py
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+networks:
+  mspr_network:
+    driver: bridge
+
+volumes:
+  etl_data:
+    driver: local
+
+

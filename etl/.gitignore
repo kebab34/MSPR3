@@ -1,0 +1,6 @@
+data/
+logs/*.log
+logs/reports/*.json
+__pycache__/
+*.pyc
+.env

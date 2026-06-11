@@ -1,0 +1,65 @@
+# Ancien code Streamlit (remplacé par Next.js)
+streamlit/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+# Ne pas utiliser `lib/` seul : ça ignore aussi web/src/lib/ (Next.js)
+/lib/
+/lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+*.log
+
+# Data files
+data/
+*.csv
+*.xlsx
+*.json
+!requirements.json
+# Next.js / npm (le lockfile sert à Vercel : npm ci)
+!web/package-lock.json
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+etl/data/*
+!etl/data/.gitkeep
+
+# Node (projet web en npm : utiliser package-lock.json)
+pnpm-lock.yaml
+

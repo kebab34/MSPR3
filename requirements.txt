@@ -1,0 +1,35 @@
+# FastAPI
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+
+# Supabase
+supabase==2.0.3
+postgrest==0.13.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# ETL
+pandas==2.1.3
+numpy==1.26.2
+openpyxl==3.1.2
+
+requests==2.31.0
+
+# Scheduler
+apscheduler==3.10.4
+
+# Utilities
+python-dotenv==1.0.0
+httpx==0.25.2
+
+# Tests
+pytest-cov==5.0.0
+
+
