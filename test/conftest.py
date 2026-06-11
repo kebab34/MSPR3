@@ -27,10 +27,12 @@ def _mock_supabase():
         "JWT_SECRET": "test-secret-key-for-unit-tests-min-32-chars-ok-123",
         "JWT_ALGORITHM": "HS256",
     }):
-        with patch("app.core.database.create_client", return_value=mock_client):
-            with patch("app.core.database.supabase", mock_client):
-                with patch("app.core.database.supabase_admin", mock_admin):
-                    yield mock_admin
+        with patch("supabase.create_client", return_value=mock_client):
+            import app.core.database as dbc
+            dbc._supabase = mock_client
+            dbc.get_supabase = lambda: mock_client
+            dbc.get_supabase_admin = lambda: mock_admin
+            yield mock_admin
 
 
 @pytest.fixture()
