@@ -28,8 +28,9 @@ with patch("supabase.create_client", return_value=_mock_supabase):
     from app.main import app
     from app.api.v1 import deps as _deps
     import app.core.database as db
-    db.supabase = _mock_supabase
-    db.supabase_admin = _mock_supabase_admin
+    db._supabase = _mock_supabase
+    db.get_supabase_admin = lambda: _mock_supabase_admin
+    db.get_supabase = lambda: _mock_supabase
 
     async def _fake_require_admin():
         return {
@@ -38,7 +39,6 @@ with patch("supabase.create_client", return_value=_mock_supabase):
             "profile": {"app_role": "admin", "id_utilisateur": "00000000-0000-0000-0000-000000000001"},
         }
 
-    # Utilisateurs : rôle admin sans JWT dans les tests unitaires
     app.dependency_overrides[_deps.require_admin] = _fake_require_admin
 
 
@@ -57,20 +57,9 @@ def mock_db(monkeypatch):
     """
     mock_supa = MagicMock()
     mock_admin = MagicMock()
-    monkeypatch.setattr("app.core.database.supabase", mock_supa)
-    monkeypatch.setattr("app.core.database.supabase_admin", mock_admin)
-    # Propager aux modules déjà importés
-    import app.api.v1.endpoints.journal as j_mod
-    import app.api.v1.endpoints.sessions as s_mod
-    import app.api.v1.endpoints.mesures as m_mod
-    import app.api.v1.endpoints.utilisateurs as u_mod
-    import app.api.v1.endpoints.aliments as al_mod
-    import app.api.v1.endpoints.exercices as ex_mod
-    import app.api.v1.endpoints.auth as auth_mod
-    for mod in [j_mod, s_mod, m_mod, u_mod, al_mod, ex_mod]:
-        monkeypatch.setattr(mod, "supabase_admin", mock_admin)
-    monkeypatch.setattr(auth_mod, "supabase", mock_supa)
-    monkeypatch.setattr(auth_mod, "supabase_admin", mock_admin)
+    import app.core.database as dbc
+    monkeypatch.setattr(dbc, "get_supabase_admin", lambda: mock_admin)
+    monkeypatch.setattr(dbc, "get_supabase", lambda: mock_supa)
     return mock_supa, mock_admin
 
 
