@@ -4,7 +4,7 @@ Remplace l'ancien script de test manuel.
 """
 
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 from datetime import datetime
 
