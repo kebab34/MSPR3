@@ -56,23 +56,11 @@ def client(_mock_supabase):
 
 @pytest.fixture()
 def supabase_mock(_mock_supabase, monkeypatch):
-    """
-    Même instance que le client DB pour les tests racine, synchronisée sur les modules
-    endpoints (le scope api/ peut y avoir rattaché un autre mock).
-    """
     _mock_supabase.reset_mock()
     import app.core.database as dbc
-    import app.api.v1.endpoints.utilisateurs as u_mod
-    import app.api.v1.endpoints.aliments as a_mod
-    import app.api.v1.endpoints.exercices as e_mod
-    import app.api.v1.endpoints.journal as j_mod
-    import app.api.v1.endpoints.sessions as s_mod
-    import app.api.v1.endpoints.mesures as m_mod
-
-    monkeypatch.setattr(dbc, "supabase_admin", _mock_supabase)
-    for m in (u_mod, a_mod, e_mod, j_mod, s_mod, m_mod):
-        monkeypatch.setattr(m, "supabase_admin", _mock_supabase)
+    monkeypatch.setattr(dbc, "get_supabase_admin", lambda: _mock_supabase)
     return _mock_supabase
+
 
 
 @pytest.fixture()
