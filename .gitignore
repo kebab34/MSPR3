@@ -64,6 +64,9 @@ Thumbs.db
 etl/data/*
 !etl/data/.gitkeep
 
+# Backups
+backups/
+
 # Node (projet web en npm : utiliser package-lock.json)
 pnpm-lock.yaml
 
