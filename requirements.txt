@@ -27,7 +27,7 @@ apscheduler==3.10.4
 
 # Utilities
 python-dotenv==1.0.0
-httpx==0.25.2
+httpx==0.24.1
 
 # Tests
 pytest-cov==5.0.0
