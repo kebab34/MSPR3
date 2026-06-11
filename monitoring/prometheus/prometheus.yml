@@ -10,6 +10,10 @@ scrape_configs:
     static_configs:
       - targets: ['mspr_ml_service:8000']
 
+  - job_name: 'social_api'
+    static_configs:
+      - targets: ['mspr_social_api:8002']
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

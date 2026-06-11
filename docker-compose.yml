@@ -87,6 +87,23 @@ services:
       - mspr_network
     restart: unless-stopped
 
+  social_api:
+    build:
+      context: ./social_api
+      dockerfile: Dockerfile
+    container_name: mspr_social_api
+    ports:
+      - "${SOCIAL_PORT:-8002}:8002"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./social_api:/app
+    networks:
+      - mspr_network
+    restart: unless-stopped
   prometheus:
     image: prom/prometheus:latest
     container_name: mspr_prometheus
