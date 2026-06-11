@@ -49,7 +49,11 @@ data/
 *.json
 !requirements.json
 # Next.js / npm (le lockfile sert à Vercel : npm ci)
+!web/package.json
 !web/package-lock.json
+!web/tsconfig.json
+!web/components.json
+!web/vercel.json
 
 
 # OS
