@@ -39,16 +39,7 @@ with patch("supabase.create_client", return_value=_mock_supabase):
             "profile": {"app_role": "admin", "id_utilisateur": "00000000-0000-0000-0000-000000000001"},
         }
 
-    async def _fake_get_current_profile():
-        return {
-            "id": "user-test-uuid-1234",
-            "email": "test@example.com",
-            "id_utilisateur": "00000000-0000-0000-0000-000000000001",
-            "app_role": "user",
-        }
-
     app.dependency_overrides[_deps.require_admin] = _fake_require_admin
-    app.dependency_overrides[_deps.get_current_profile] = _fake_get_current_profile
 
 
 @pytest.fixture
@@ -67,9 +58,19 @@ def mock_db(monkeypatch):
     mock_supa = MagicMock()
     mock_admin = MagicMock()
     import app.core.database as dbc
+    import app.api.v1.deps as _dep
     monkeypatch.setattr(dbc, "get_supabase_admin", lambda: mock_admin)
     monkeypatch.setattr(dbc, "get_supabase", lambda: mock_supa)
     monkeypatch.setattr(dbc, "create_client", lambda url, key: mock_admin)
+    monkeypatch.setattr(dbc, "_supabase", mock_supa)
+    _fake_profile = {
+        "id_utilisateur": "00000000-0000-0000-0000-000000000001",
+        "email": "test@example.com",
+        "app_role": "user",
+        "type_abonnement": "freemium",
+        "auth_id": "user-test-uuid-1234",
+    }
+    monkeypatch.setattr(_dep, "ensure_app_profile", lambda auth_id, email: _fake_profile)
     return mock_supa, mock_admin
 
 

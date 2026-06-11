@@ -3,7 +3,7 @@ Tests d'intégration des endpoints CRUD de l'API (avec Supabase mocké).
 """
 
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestHealthEndpoint:
@@ -52,10 +52,8 @@ class TestUtilisateursEndpoints:
 
 
 class TestAlimentsEndpoints:
-    def test_get_aliments_public(self, client, supabase_mock, auth_headers):
-        supabase_mock.table.return_value.select.return_value.range.return_value.order.return_value.execute.return_value = MagicMock(
-            data=[]
-        )
+    @patch("app.api.v1.endpoints.aliments.select_list", return_value=[])
+    def test_get_aliments_public(self, mock_select, client, supabase_mock, auth_headers):
         resp = client.get("/api/v1/aliments", headers=auth_headers)
         assert resp.status_code == 200
 
@@ -65,10 +63,8 @@ class TestAlimentsEndpoints:
 
 
 class TestExercicesEndpoints:
-    def test_get_exercices_public(self, client, supabase_mock, auth_headers):
-        supabase_mock.table.return_value.select.return_value.range.return_value.order.return_value.execute.return_value = MagicMock(
-            data=[]
-        )
+    @patch("app.api.v1.endpoints.exercices.select_list", return_value=[])
+    def test_get_exercices_public(self, mock_select, client, supabase_mock, auth_headers):
         resp = client.get("/api/v1/exercices", headers=auth_headers)
         assert resp.status_code == 200
 

@@ -9,6 +9,7 @@ from typing import List, Optional
 from uuid import UUID
 from app.core.postgrest_admin import select_list
 from app.core.cache import api_cache
+from app.core.database import get_supabase_admin
 
 logger = logging.getLogger(__name__)
 from app.schemas.aliment import AlimentCreate, AlimentUpdate, AlimentRead

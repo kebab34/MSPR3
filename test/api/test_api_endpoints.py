@@ -171,10 +171,9 @@ class TestUtilisateurs:
 # ---------------------------------------------------------------------------
 
 class TestAliments:
-    def test_get_list(self, client, mock_db, auth_headers):
-        _, mock_admin = mock_db
-        mock_admin.table.return_value.select.return_value.range.return_value.order.return_value.execute.return_value = MagicMock(data=[make_aliment()])
-
+    @patch("app.api.v1.endpoints.aliments.select_list")
+    def test_get_list(self, mock_select, client, mock_db, auth_headers):
+        mock_select.return_value = [make_aliment()]
         response = client.get("/api/v1/aliments", headers=auth_headers)
         assert response.status_code == 200
 
@@ -191,10 +190,9 @@ class TestAliments:
 # ---------------------------------------------------------------------------
 
 class TestExercices:
-    def test_get_list(self, client, mock_db, auth_headers):
-        _, mock_admin = mock_db
-        mock_admin.table.return_value.select.return_value.range.return_value.order.return_value.execute.return_value = MagicMock(data=[make_exercice()])
-
+    @patch("app.api.v1.endpoints.exercices.select_list")
+    def test_get_list(self, mock_select, client, mock_db, auth_headers):
+        mock_select.return_value = [make_exercice()]
         response = client.get("/api/v1/exercices", headers=auth_headers)
         assert response.status_code == 200
 

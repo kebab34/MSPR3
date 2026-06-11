@@ -60,7 +60,17 @@ def client(_mock_supabase):
 def supabase_mock(_mock_supabase, monkeypatch):
     _mock_supabase.reset_mock()
     import app.core.database as dbc
+    import app.api.v1.deps as _dep
     monkeypatch.setattr(dbc, "get_supabase_admin", lambda: _mock_supabase)
+    monkeypatch.setattr(dbc, "create_client", lambda url, key: _mock_supabase)
+    _fake_profile = {
+        "id_utilisateur": "00000000-0000-0000-0000-000000000001",
+        "email": "test@example.com",
+        "app_role": "user",
+        "type_abonnement": "freemium",
+        "auth_id": "user-test-uuid-1234",
+    }
+    monkeypatch.setattr(_dep, "ensure_app_profile", lambda auth_id, email: _fake_profile)
     return _mock_supabase
 
 

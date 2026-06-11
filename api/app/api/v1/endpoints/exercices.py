@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 from app.core.postgrest_admin import select_list
 from app.core.cache import api_cache
+from app.core.database import get_supabase_admin
 from app.schemas.exercice import ExerciceCreate, ExerciceUpdate, ExerciceRead
 from app.api.v1.deps import get_current_user
 
