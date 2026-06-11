@@ -23,6 +23,8 @@ from planner import build_weekly_plan
 from diet_rules import resolve_diet_plan
 from vision_client import identify_food
 from nutrition_db import get_nutrition, analyze_balance
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -227,3 +229,5 @@ def _generate_meal_suggestions(food_fr: str, nutrition: dict, objectif: str, ale
         pass
 
     return f"Pour un objectif {obj_fr}, complétez ce repas avec des légumes frais et des protéines maigres."
+
+Instrumentator().instrument(app).expose(app)

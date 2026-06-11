@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.database import init_supabase
 from app.core.rate_limit import limiter
 from app.api.v1.api import api_router
+from prometheus_fastapi_instrumentator import Instrumentator
 
 
 @asynccontextmanager
@@ -62,4 +63,4 @@ async def health_check():
     """Vérification de santé de l'API"""
     return {"status": "healthy"}
 
-
+Instrumentator().instrument(app).expose(app)

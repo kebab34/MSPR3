@@ -97,12 +97,40 @@ services:
       - mspr_network
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mspr_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mspr_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
 networks:
   mspr_network:
     driver: bridge
 
 volumes:
   etl_data:
+    driver: local
+  grafana_data:
     driver: local
 
 
