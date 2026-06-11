@@ -1,0 +1,15 @@
+services:
+  ml_service:
+    environment:
+      - ML_DATASET_PATH=/app/data/diet_recommendations_dataset.csv
+      - ML_TRAIN_TOKEN=
+      - HUGGINGFACE_API_TOKEN=
+      - HUGGINGFACE_MODEL=
+  
+  prometheus:
+    profiles:
+      - monitoring
+
+  grafana:
+    profiles:
+      - monitoring
