@@ -1,29 +1,126 @@
+# Configuration PERFORMANCE — Matériel modeste
+# Usage : docker compose -f docker-compose.perf.yml up -d
+#
+# Différences vs configuration complète :
+#   - Limites CPU/RAM sur chaque service
+#   - Grafana désactivé (monitoring simplifié, Prometheus seul)
+#   - ETL désactivé (données déjà chargées)
+#   - ML service en mode léger (pas d'entraînement au démarrage)
+
 services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: mspr_api
+    ports:
+      - "${API_HOST_PORT:-8001}:8001"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+    volumes:
+      - ./api:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: mspr_web
+    ports:
+      - "${WEB_PORT:-8000}:3000"
+    environment:
+      - API_URL=http://mspr_api:8001
+      - ML_API_URL=http://mspr_ml_service:8000
+    depends_on:
+      - api
+      - ml_service
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+    networks:
+      - mspr_network
+    restart: unless-stopped
+
+  # ML en mode léger : pas d'entraînement auto au démarrage
   ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: mspr_ml_service
+    ports:
+      - "${ML_PORT:-8003}:8000"
+    environment:
+      - ML_DATASET_PATH=/app/data/diet_recommendations_dataset.csv
+      - ML_TRAIN_TOKEN=${ML_TRAIN_TOKEN:-}
+      - HUGGINGFACE_API_TOKEN=${HUGGINGFACE_API_TOKEN:-}
+      - HUGGINGFACE_MODEL=${HUGGINGFACE_MODEL:-}
+    volumes:
+      - ./ml_service:/app
+      - ./etl/data:/app/data
     deploy:
       resources:
         limits:
           memory: 512m
-          cpus: '0.5'
+          cpus: "0.75"
+    networks:
+      - mspr_network
+    restart: unless-stopped
 
-  api:
+  social_api:
+    build:
+      context: ./social_api
+      dockerfile: Dockerfile
+    container_name: mspr_social_api
+    ports:
+      - "${SOCIAL_PORT:-8002}:8002"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./social_api:/app
     deploy:
       resources:
         limits:
-          memory: 256m
-          cpus: '0.5'
+          memory: 128m
+          cpus: "0.25"
+    networks:
+      - mspr_network
+    restart: unless-stopped
 
-  web:
-    deploy:
-      resources:
-        limits:
-          memory: 256m
-          cpus: '0.5'
-
+  # Monitoring simplifié : Prometheus uniquement (pas de Grafana)
   prometheus:
-    profiles:
-      - monitoring
+    image: prom/prometheus:latest
+    container_name: mspr_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.25"
+    networks:
+      - mspr_network
+    restart: unless-stopped
 
-  grafana:
-    profiles:
-      - monitoring
+networks:
+  mspr_network:
+    driver: bridge

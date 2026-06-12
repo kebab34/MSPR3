@@ -1,6 +1,7 @@
-.PHONY: up down reset logs
+.PHONY: up down reset logs up-offline up-perf
 
-up: 
+# Configuration complète (défaut)
+up:
 		docker compose up -d
 
 down:
@@ -12,3 +13,11 @@ reset:
 
 logs:
 		docker compose logs -f
+
+# Configuration hors-ligne (sans HuggingFace ni Kaggle)
+up-offline:
+		docker compose -f docker-compose.offline.yml up -d
+
+# Configuration performance (matériel modeste, sans Grafana)
+up-perf:
+		docker compose -f docker-compose.perf.yml up -d
