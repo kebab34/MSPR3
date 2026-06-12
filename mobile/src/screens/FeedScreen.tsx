@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, FlatList, RefreshControl, StyleSheet,
   Text, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform,
@@ -15,12 +16,14 @@ export default function FeedScreen() {
   const [newComment, setNewComment] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setCurrentUserId(data.session?.user.id || '');
-    });
-    loadPosts();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      supabase.auth.getSession().then(({ data }) => {
+        setCurrentUserId(data.session?.user.id || '');
+      });
+      loadPosts();
+    }, [])
+  );
 
   async function loadPosts() {
     try {
