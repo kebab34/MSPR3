@@ -17,12 +17,19 @@ async def get_current_user(
     return {"auth_id": auth_id, "email": email}
 
 async def get_current_profile(user: dict = Depends(get_current_user)) -> dict:
+    import uuid
     admin = get_supabase_admin()
     res = admin.table("utilisateurs").select("id_utilisateur, nom, prenom") \
         .eq("auth_id", user["auth_id"]).execute()
     if not res.data:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Aucun profil lié à ce compte.")
-    profile = res.data[0]
+        new_id = str(uuid.uuid4())
+        admin.table("utilisateurs").insert({
+            "id_utilisateur": new_id,
+            "auth_id": user["auth_id"],
+            "email": user["email"],
+        }).execute()
+        profile = {"id_utilisateur": new_id, "nom": None, "prenom": None}
+    else:
+        profile = res.data[0]
     return {**user, "id_utilisateur": profile["id_utilisateur"],
             "nom": profile.get("nom"), "prenom": profile.get("prenom")}

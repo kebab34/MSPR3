@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Image, Alert, ActivityIndicator, ScrollView,
+  Text, TextInput, TouchableOpacity,
+  StyleSheet, Image, ActivityIndicator, ScrollView, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../config/supabase';
@@ -11,18 +11,22 @@ export default function CreatePostScreen() {
   const [contenu, setContenu] = useState('');
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
     });
     if (!result.canceled) setImage(result.assets[0]);
   }
 
   async function handleSubmit() {
+    setErrorMsg('');
+    setSuccessMsg('');
     if (!contenu.trim()) {
-      Alert.alert('Erreur', 'Le contenu ne peut pas être vide.');
+      setErrorMsg('Le contenu ne peut pas être vide.');
       return;
     }
     setLoading(true);
@@ -34,13 +38,20 @@ export default function CreatePostScreen() {
       formData.append('contenu', contenu.trim());
 
       if (image) {
-        const filename = image.uri.split('/').pop() || 'photo.jpg';
-        const ext = filename.split('.').pop() || 'jpg';
-        formData.append('file', {
-          uri: image.uri,
-          name: filename,
-          type: `image/${ext}`,
-        } as any);
+        if (Platform.OS === 'web') {
+          const resp = await fetch(image.uri);
+          const blob = await resp.blob();
+          const ext = blob.type.split('/')[1] || 'jpg';
+          formData.append('file', blob, `photo.${ext}`);
+        } else {
+          const filename = image.uri.split('/').pop() || 'photo.jpg';
+          const ext = filename.split('.').pop() || 'jpg';
+          formData.append('file', {
+            uri: image.uri,
+            name: filename,
+            type: `image/${ext}`,
+          } as any);
+        }
       }
 
       const res = await fetch(`${SOCIAL_API_URL}/api/v1/posts`, {
@@ -49,12 +60,16 @@ export default function CreatePostScreen() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la publication');
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('422 detail:', body);
+        throw new Error(body);
+      }
       setContenu('');
       setImage(null);
-      Alert.alert('Succès', 'Publication créée !');
+      setSuccessMsg('Publication créée !');
     } catch (e: any) {
-      Alert.alert('Erreur', e.message);
+      setErrorMsg(e.message || 'Erreur inconnue');
     } finally {
       setLoading(false);
     }
@@ -63,6 +78,8 @@ export default function CreatePostScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Nouvelle publication</Text>
+      {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
+      {successMsg ? <Text style={styles.success}>{successMsg}</Text> : null}
       <TextInput
         style={styles.textarea}
         placeholder="Quoi de neuf ?"
@@ -93,4 +110,6 @@ const styles = StyleSheet.create({
   photoBtnText: { color: '#16a34a', fontSize: 15 },
   submitBtn: { backgroundColor: '#16a34a', padding: 14, borderRadius: 8, alignItems: 'center' },
   submitText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  error: { color: '#ef4444', textAlign: 'center', marginBottom: 12, fontSize: 14 },
+  success: { color: '#16a34a', textAlign: 'center', marginBottom: 12, fontSize: 14 },
 });
