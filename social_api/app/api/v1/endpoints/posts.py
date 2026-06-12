@@ -57,6 +57,40 @@ async def create_post(
     return res.data[0]
 
 
+@router.get("/me")
+async def my_posts(user: dict = Depends(get_current_profile)):
+    admin = get_supabase_admin()
+    res = admin.table("posts") \
+        .select("*, likes(count), commentaires(count)") \
+        .eq("id_utilisateur", user["id_utilisateur"]) \
+        .order("created_at", desc=True).execute()
+    posts = res.data or []
+    for post in posts:
+        post["liked_by_me"] = False
+        post["likes_count"] = post.get("likes", [{}])[0].get("count", 0) if post.get("likes") else 0
+        post["comments_count"] = post.get("commentaires", [{}])[0].get("count", 0) if post.get("commentaires") else 0
+    return posts
+
+
+@router.get("/liked")
+async def liked_posts(user: dict = Depends(get_current_profile)):
+    admin = get_supabase_admin()
+    likes_res = admin.table("likes").select("id_post") \
+        .eq("id_utilisateur", user["id_utilisateur"]).execute()
+    ids = [l["id_post"] for l in (likes_res.data or [])]
+    if not ids:
+        return []
+    res = admin.table("posts") \
+        .select("*, utilisateurs(nom, prenom, email), likes(count), commentaires(count)") \
+        .in_("id_post", ids).order("created_at", desc=True).execute()
+    posts = res.data or []
+    for post in posts:
+        post["liked_by_me"] = True
+        post["likes_count"] = post.get("likes", [{}])[0].get("count", 0) if post.get("likes") else 0
+        post["comments_count"] = post.get("commentaires", [{}])[0].get("count", 0) if post.get("commentaires") else 0
+    return posts
+
+
 @router.delete("/{id_post}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(
     id_post: str,
