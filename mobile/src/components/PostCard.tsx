@@ -1,69 +1,108 @@
 import { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../config/api';
 
-interface Post {
-  id_post: string;
-  contenu: string;
-  media_url?: string;
-  media_type?: string;
-  liked_by_me: boolean;
-  likes_count: number;
-  comments_count: number;
-  created_at: string;
-  utilisateurs?: { nom?: string; prenom?: string; email: string };
-}
+const { width } = Dimensions.get('window');
 
-interface Props {
-  post: Post;
-  onComment: (post: Post) => void;
+interface PostCardProps {
+  post: any;
+  onComment: (post: any) => void;
   onDelete?: (id: string) => void;
-  currentUserId?: string;
+  onUserPress?: (id_utilisateur: string) => void;
 }
 
-export default function PostCard({ post, onComment, onDelete, currentUserId }: Props) {
-  const [liked, setLiked] = useState(post.liked_by_me);
-  const [likesCount, setLikesCount] = useState(post.likes_count);
+export default function PostCard({ post, onComment, onDelete, onUserPress }: PostCardProps) {
+  const [liked, setLiked] = useState(post.liked_by_me || false);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
 
-  async function handleLike() {
+  const initials = (post.utilisateurs?.prenom || post.utilisateurs?.email || '?')
+    .charAt(0).toUpperCase();
+  const displayName = post.utilisateurs?.prenom && post.utilisateurs?.nom
+    ? `${post.utilisateurs.prenom} ${post.utilisateurs.nom}`
+    : post.utilisateurs?.email?.split('@')[0] || 'Utilisateur';
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "À l'instant";
+    if (m < 60) return `${m}min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}j`;
+  };
+
+  async function toggleLike() {
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikesCount((c: number) => wasLiked ? c - 1 : c + 1);
     try {
-      const res = await apiFetch(`/api/v1/posts/${post.id_post}/likes`, { method: 'POST' });
-      setLiked(res.liked);
-      setLikesCount(prev => res.liked ? prev + 1 : prev - 1);
-    } catch {}
+      await apiFetch(`/api/v1/posts/${post.id_post}/likes`, { method: 'POST' });
+    } catch {
+      setLiked(wasLiked);
+      setLikesCount((c: number) => wasLiked ? c + 1 : c - 1);
+    }
   }
-
-  const author = post.utilisateurs;
-  const authorName = author?.prenom || author?.nom || author?.email || 'Utilisateur';
 
   return (
     <View style={styles.card}>
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{authorName[0].toUpperCase()}</Text>
-        </View>
-        <Text style={styles.authorName}>{authorName}</Text>
+        <TouchableOpacity
+          onPress={() => onUserPress?.(post.id_utilisateur)}
+          activeOpacity={onUserPress ? 0.7 : 1}
+          style={styles.avatarGlow}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerInfo}
+          onPress={() => onUserPress?.(post.id_utilisateur)}
+          activeOpacity={onUserPress ? 0.7 : 1}
+        >
+          <Text style={styles.name}>{displayName}</Text>
+          <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
+        </TouchableOpacity>
         {onDelete && (
           <TouchableOpacity onPress={() => onDelete(post.id_post)} style={styles.deleteBtn}>
-            <Text style={styles.deleteText}>✕</Text>
+            <Ionicons name="ellipsis-horizontal" size={20} color="#4b5563" />
           </TouchableOpacity>
         )}
       </View>
 
-      <Text style={styles.contenu}>{post.contenu}</Text>
+      {/* Content */}
+      {post.contenu ? <Text style={styles.content}>{post.contenu}</Text> : null}
 
+      {/* Image */}
       {post.media_url && post.media_type === 'image' && (
-        <Image source={{ uri: post.media_url }} style={styles.media} resizeMode="cover" />
+        <Image source={{ uri: post.media_url }} style={styles.image} resizeMode="cover" />
       )}
 
+      {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity onPress={handleLike} style={styles.actionBtn}>
-          <Text style={[styles.actionText, liked && styles.liked]}>
-            {liked ? '❤️' : '🤍'} {likesCount}
+        <TouchableOpacity style={styles.action} onPress={toggleLike} activeOpacity={0.7}>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={24}
+            color={liked ? '#f43f5e' : '#6b7280'}
+          />
+          <Text style={[styles.actionCount, liked && { color: '#f43f5e' }]}>
+            {likesCount > 0 ? likesCount : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onComment(post)} style={styles.actionBtn}>
-          <Text style={styles.actionText}>💬 {post.comments_count}</Text>
+
+        <TouchableOpacity style={styles.action} onPress={() => onComment(post)} activeOpacity={0.7}>
+          <Ionicons name="chatbubble-outline" size={22} color="#6b7280" />
+          <Text style={styles.actionCount}>
+            {post.comments_count > 0 ? post.comments_count : ''}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity activeOpacity={0.7}>
+          <Ionicons name="bookmark-outline" size={22} color="#6b7280" />
         </TouchableOpacity>
       </View>
     </View>
@@ -71,17 +110,58 @@ export default function PostCard({ post, onComment, onDelete, currentUserId }: P
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#fff', marginBottom: 12, padding: 16, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#16a34a', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  authorName: { fontWeight: '600', fontSize: 15, flex: 1 },
-  deleteBtn: { padding: 4 },
-  deleteText: { color: '#ef4444', fontSize: 14 },
-  contenu: { fontSize: 15, lineHeight: 22, marginBottom: 10 },
-  media: { width: '100%', height: 200, borderRadius: 8, marginBottom: 10 },
-  actions: { flexDirection: 'row', gap: 16, borderTopWidth: 1, borderTopColor: '#f3f4f6', paddingTop: 10 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center' },
-  actionText: { fontSize: 15, color: '#6b7280' },
-  liked: { color: '#ef4444' },
+  card: {
+    backgroundColor: '#161b22',
+    borderRadius: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#21262d',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+  },
+  avatarGlow: {
+    borderRadius: 24,
+    padding: 2,
+    backgroundColor: '#22c55e22',
+    marginRight: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#22c55e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  headerInfo: { flex: 1 },
+  name: { fontWeight: '700', fontSize: 14, color: '#f0f6fc', letterSpacing: 0.2 },
+  time: { fontSize: 12, color: '#4b5563', marginTop: 1 },
+  deleteBtn: { padding: 6 },
+  content: {
+    fontSize: 15,
+    color: '#c9d1d9',
+    lineHeight: 23,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  image: {
+    width: '100%',
+    height: 260,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 18,
+    borderTopWidth: 1,
+    borderTopColor: '#21262d',
+  },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionCount: { fontSize: 14, color: '#6b7280', fontWeight: '600', minWidth: 16 },
 });
