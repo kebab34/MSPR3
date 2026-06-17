@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, Dimensions, Modal, ActivityIndicator, SafeAreaView,
+  Image, Modal, ActivityIndicator, SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { apiFetch } from '../config/api';
 import Avatar from '../components/Avatar';
-
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - 40 - 4) / 3;
 
 export default function UserProfileScreen() {
   const navigation = useNavigation();
@@ -244,7 +241,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#21262d',
   },
   emailText: { fontSize: 12, color: '#4b5563' },
-  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 },
+  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', lineHeight: 20, width: '100%', paddingHorizontal: 8 },
   stats: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#161b22', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24,
@@ -275,7 +272,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 14, fontWeight: '700', color: '#f0f6fc' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 2 },
   gridItem: {
-    width: GRID_SIZE, height: GRID_SIZE, margin: 1,
+    width: '33.33%',
+    aspectRatio: 1,
+    padding: 1,
     backgroundColor: '#161b22', overflow: 'hidden', position: 'relative',
   },
   gridImg: { width: '100%', height: '100%' },

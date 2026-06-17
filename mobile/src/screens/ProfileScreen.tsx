@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, SafeAreaView, ActivityIndicator,
-  Image, Dimensions, Modal, Platform,
+  Image, Modal, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,9 +10,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../config/supabase';
 import { apiFetch, SOCIAL_API_URL } from '../config/api';
 import Avatar from '../components/Avatar';
-
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - 40 - 4) / 3;
 
 type Tab = 'posts' | 'liked' | 'edit';
 
@@ -406,7 +403,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#21262d', marginBottom: 20,
   },
   emailText: { fontSize: 12, color: '#4b5563' },
-  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', paddingHorizontal: 20, marginTop: 8, lineHeight: 20 },
+  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', marginTop: 8, lineHeight: 20, width: '100%', paddingHorizontal: 8 },
   bioCharCount: { fontSize: 11, color: '#4b5563', textAlign: 'right', marginTop: -10, marginBottom: 14 },
   stats: {
     flexDirection: 'row', alignItems: 'center',
@@ -439,7 +436,9 @@ const styles = StyleSheet.create({
   gridSection: { padding: 2, minHeight: 200 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   gridItem: {
-    width: GRID_SIZE, height: GRID_SIZE, margin: 1,
+    width: '33.33%',
+    aspectRatio: 1,
+    padding: 1,
     backgroundColor: '#161b22', overflow: 'hidden',
     position: 'relative',
   },
