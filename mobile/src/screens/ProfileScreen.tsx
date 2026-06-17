@@ -31,6 +31,9 @@ export default function ProfileScreen() {
   const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useFocusEffect(useCallback(() => { loadAll(); }, []));
 
@@ -89,6 +92,38 @@ export default function ProfileScreen() {
       setLikedPosts(liked || []);
     } catch {}
     setLoadingPosts(false);
+  }
+
+  function closeModal() {
+    setSelectedPost(null);
+    setEditMode(false);
+    setEditContent('');
+  }
+
+  async function handleEditPost() {
+    if (!editContent.trim() || !selectedPost) return;
+    setActionLoading(true);
+    try {
+      const updated = await apiFetch(`/api/v1/posts/${selectedPost.id_post}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ contenu: editContent.trim() }),
+      });
+      setMyPosts(prev => prev.map(p => p.id_post === selectedPost.id_post ? { ...p, contenu: updated.contenu } : p));
+      setSelectedPost((p: any) => ({ ...p, contenu: updated.contenu }));
+      setEditMode(false);
+    } catch {}
+    setActionLoading(false);
+  }
+
+  async function handleDeletePost() {
+    if (!selectedPost) return;
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/v1/posts/${selectedPost.id_post}`, { method: 'DELETE' });
+      setMyPosts(prev => prev.filter(p => p.id_post !== selectedPost.id_post));
+      closeModal();
+    } catch {}
+    setActionLoading(false);
   }
 
   async function handleSave() {
@@ -254,28 +289,82 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Modal détail post */}
-      <Modal visible={!!selectedPost} animationType="fade" transparent onRequestClose={() => setSelectedPost(null)}>
+      <Modal visible={!!selectedPost} animationType="fade" transparent onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <TouchableOpacity style={styles.modalClose} onPress={() => setSelectedPost(null)}>
+            <TouchableOpacity style={styles.modalClose} onPress={closeModal}>
               <Ionicons name="close" size={22} color="#f0f6fc" />
             </TouchableOpacity>
+
             {selectedPost?.media_url && (
               <Image source={{ uri: selectedPost.media_url }} style={styles.modalImg} resizeMode="cover" />
             )}
-            {selectedPost?.contenu ? (
-              <Text style={styles.modalContent}>{selectedPost.contenu}</Text>
-            ) : null}
-            <View style={styles.modalActions}>
-              <View style={styles.modalAction}>
-                <Ionicons name="heart" size={16} color="#f43f5e" />
-                <Text style={styles.modalActionText}>{selectedPost?.likes_count || 0} j'aime</Text>
+
+            {editMode ? (
+              <View style={styles.editModalWrap}>
+                <TextInput
+                  style={styles.editModalInput}
+                  value={editContent}
+                  onChangeText={setEditContent}
+                  multiline
+                  autoFocus
+                  placeholderTextColor="#4b5563"
+                  textAlignVertical="top"
+                />
+                <View style={styles.editModalBtns}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditMode(false)}>
+                    <Text style={styles.cancelBtnText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.savePostBtn, actionLoading && { opacity: 0.6 }]}
+                    onPress={handleEditPost}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={styles.savePostBtnText}>Sauvegarder</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.modalAction}>
-                <Ionicons name="chatbubble-outline" size={16} color="#4b5563" />
-                <Text style={styles.modalActionText}>{selectedPost?.comments_count || 0} commentaires</Text>
-              </View>
-            </View>
+            ) : (
+              <>
+                {selectedPost?.contenu
+                  ? <Text style={styles.modalContent}>{selectedPost.contenu}</Text>
+                  : null}
+                <View style={styles.modalActions}>
+                  <View style={styles.modalAction}>
+                    <Ionicons name="heart" size={16} color="#f43f5e" />
+                    <Text style={styles.modalActionText}>{selectedPost?.likes_count || 0} j'aime</Text>
+                  </View>
+                  <View style={styles.modalAction}>
+                    <Ionicons name="chatbubble-outline" size={16} color="#4b5563" />
+                    <Text style={styles.modalActionText}>{selectedPost?.comments_count || 0} commentaires</Text>
+                  </View>
+                  {tab === 'posts' && (
+                    <>
+                      <View style={{ flex: 1 }} />
+                      <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={() => { setEditContent(selectedPost?.contenu || ''); setEditMode(true); }}
+                      >
+                        <Ionicons name="pencil-outline" size={17} color="#8b949e" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={handleDeletePost}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading
+                          ? <ActivityIndicator size="small" color="#f87171" />
+                          : <Ionicons name="trash-outline" size={17} color="#f87171" />
+                        }
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -396,4 +485,25 @@ const styles = StyleSheet.create({
   },
   modalAction: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   modalActionText: { fontSize: 13, color: '#4b5563', fontWeight: '600' },
+  iconBtn: {
+    width: 34, height: 34, borderRadius: 10,
+    backgroundColor: '#0d1117', justifyContent: 'center', alignItems: 'center',
+  },
+  editModalWrap: { padding: 16 },
+  editModalInput: {
+    backgroundColor: '#0d1117', borderRadius: 12, borderWidth: 1, borderColor: '#21262d',
+    padding: 14, fontSize: 15, color: '#f0f6fc', minHeight: 100, lineHeight: 22,
+  },
+  editModalBtns: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  cancelBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: '#0d1117', borderWidth: 1, borderColor: '#21262d',
+    alignItems: 'center',
+  },
+  cancelBtnText: { color: '#8b949e', fontWeight: '700', fontSize: 14 },
+  savePostBtn: {
+    flex: 2, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: '#22c55e', alignItems: 'center', justifyContent: 'center',
+  },
+  savePostBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
 });

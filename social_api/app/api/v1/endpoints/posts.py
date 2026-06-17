@@ -1,8 +1,12 @@
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from pydantic import BaseModel
 from app.api.v1.deps import get_current_profile
 from app.core.database import get_supabase_admin
+
+class PostUpdate(BaseModel):
+    contenu: Optional[str] = None
 
 router = APIRouter()
 
@@ -96,6 +100,24 @@ async def liked_posts(user: dict = Depends(get_current_profile)):
         post["likes_count"] = post.get("likes", [{}])[0].get("count", 0) if post.get("likes") else 0
         post["comments_count"] = post.get("commentaires", [{}])[0].get("count", 0) if post.get("commentaires") else 0
     return posts
+
+
+@router.patch("/{id_post}")
+async def update_post(
+    id_post: str,
+    body: PostUpdate,
+    user: dict = Depends(get_current_profile),
+):
+    admin = get_supabase_admin()
+    res = admin.table("posts").select("id_post, id_utilisateur") \
+        .eq("id_post", id_post).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Post introuvable")
+    if res.data[0]["id_utilisateur"] != user["id_utilisateur"]:
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    res = admin.table("posts").update(updates).eq("id_post", id_post).execute()
+    return res.data[0]
 
 
 @router.delete("/{id_post}", status_code=status.HTTP_204_NO_CONTENT)
