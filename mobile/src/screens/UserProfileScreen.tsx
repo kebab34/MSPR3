@@ -96,6 +96,7 @@ export default function UserProfileScreen() {
               <Ionicons name="mail-outline" size={12} color="#4b5563" />
               <Text style={styles.emailText}>{profile.email}</Text>
             </View>
+            {profile.bio ? <Text style={styles.bioText}>{profile.bio}</Text> : null}
 
             {/* Stats */}
             <View style={styles.stats}>
@@ -243,6 +244,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#21262d',
   },
   emailText: { fontSize: 12, color: '#4b5563' },
+  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 },
   stats: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#161b22', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24,

@@ -9,6 +9,7 @@ router = APIRouter()
 class ProfileUpdate(BaseModel):
     nom: Optional[str] = None
     prenom: Optional[str] = None
+    bio: Optional[str] = None
 
 @router.get("")
 async def get_me(user: dict = Depends(get_current_profile)):
@@ -22,6 +23,7 @@ async def get_me(user: dict = Depends(get_current_profile)):
         "email": user["email"],
         "nom": user.get("nom"),
         "prenom": user.get("prenom"),
+        "bio": user.get("bio"),
         "followers_count": followers_res.count or 0,
         "following_count": following_res.count or 0,
     }

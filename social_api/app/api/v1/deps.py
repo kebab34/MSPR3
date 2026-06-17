@@ -19,7 +19,7 @@ async def get_current_user(
 async def get_current_profile(user: dict = Depends(get_current_user)) -> dict:
     import uuid
     admin = get_supabase_admin()
-    res = admin.table("utilisateurs").select("id_utilisateur, nom, prenom, avatar_url") \
+    res = admin.table("utilisateurs").select("id_utilisateur, nom, prenom, avatar_url, bio") \
         .eq("auth_id", user["auth_id"]).execute()
     if not res.data:
         new_id = str(uuid.uuid4())
@@ -28,9 +28,9 @@ async def get_current_profile(user: dict = Depends(get_current_user)) -> dict:
             "auth_id": user["auth_id"],
             "email": user["email"],
         }).execute()
-        profile = {"id_utilisateur": new_id, "nom": None, "prenom": None, "avatar_url": None}
+        profile = {"id_utilisateur": new_id, "nom": None, "prenom": None, "avatar_url": None, "bio": None}
     else:
         profile = res.data[0]
     return {**user, "id_utilisateur": profile["id_utilisateur"],
             "nom": profile.get("nom"), "prenom": profile.get("prenom"),
-            "avatar_url": profile.get("avatar_url")}
+            "avatar_url": profile.get("avatar_url"), "bio": profile.get("bio")}

@@ -20,6 +20,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
+  const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
@@ -44,6 +45,7 @@ export default function ProfileScreen() {
       const profile = await apiFetch('/api/v1/auth/me');
       setNom(profile.nom || '');
       setPrenom(profile.prenom || '');
+      setBio(profile.bio || '');
       setAvatarUrl(profile.avatar_url || null);
       setFollowersCount(profile.followers_count || 0);
       setFollowingCount(profile.following_count || 0);
@@ -129,7 +131,7 @@ export default function ProfileScreen() {
   async function handleSave() {
     setSaving(true);
     try {
-      await apiFetch('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify({ nom, prenom }) });
+      await apiFetch('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify({ nom, prenom, bio: bio || null }) });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {}
@@ -160,6 +162,7 @@ export default function ProfileScreen() {
             <Ionicons name="mail-outline" size={12} color="#4b5563" />
             <Text style={styles.emailText}>{email}</Text>
           </View>
+          {bio ? <Text style={styles.bioText}>{bio}</Text> : null}
 
           {/* Stats */}
           <View style={styles.stats}>
@@ -271,6 +274,19 @@ export default function ProfileScreen() {
               <View style={styles.inputWrap}>
                 <TextInput style={styles.input} value={nom} onChangeText={setNom} placeholder="Votre nom" placeholderTextColor="#4b5563" />
               </View>
+              <Text style={styles.label}>Bio</Text>
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={[styles.input, { minHeight: 80 }]}
+                  value={bio}
+                  onChangeText={t => { if (t.length <= 160) setBio(t); }}
+                  placeholder="Parle de toi en quelques mots..."
+                  placeholderTextColor="#4b5563"
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+              <Text style={styles.bioCharCount}>{bio.length}/160</Text>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
                 {saving ? <ActivityIndicator color="#fff" size="small" />
                   : saved
@@ -390,6 +406,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#21262d', marginBottom: 20,
   },
   emailText: { fontSize: 12, color: '#4b5563' },
+  bioText: { fontSize: 14, color: '#8b949e', textAlign: 'center', paddingHorizontal: 20, marginTop: 8, lineHeight: 20 },
+  bioCharCount: { fontSize: 11, color: '#4b5563', textAlign: 'right', marginTop: -10, marginBottom: 14 },
   stats: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#161b22', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24,
