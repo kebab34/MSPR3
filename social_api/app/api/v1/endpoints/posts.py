@@ -10,14 +10,21 @@ router = APIRouter()
 async def list_posts(
     limit: int = 20,
     offset: int = 0,
+    following: bool = False,
     user: dict = Depends(get_current_profile),
 ):
     admin = get_supabase_admin()
-    res = admin.table("posts") \
-        .select("*, utilisateurs(nom, prenom, email), likes(count), commentaires(count)") \
-        .order("created_at", desc=True) \
-        .range(offset, offset + limit - 1) \
-        .execute()
+    query = admin.table("posts") \
+        .select("*, utilisateurs(nom, prenom, email), likes(count), commentaires(count)")
+
+    if following:
+        follows_res = admin.table("follows").select("id_following") \
+            .eq("id_follower", user["id_utilisateur"]).execute()
+        ids = [f["id_following"] for f in (follows_res.data or [])]
+        ids.append(user["id_utilisateur"])
+        query = query.in_("id_utilisateur", ids)
+
+    res = query.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
     posts = res.data or []
     for post in posts:
         like_res = admin.table("likes").select("id_like") \

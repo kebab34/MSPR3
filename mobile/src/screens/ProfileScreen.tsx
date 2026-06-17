@@ -18,6 +18,8 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<Tab>('posts');
@@ -33,7 +35,10 @@ export default function ProfileScreen() {
     setEmail(data.session?.user.email || '');
     try {
       const profile = await apiFetch('/api/v1/auth/me');
-      setNom(profile.nom || ''); setPrenom(profile.prenom || '');
+      setNom(profile.nom || '');
+      setPrenom(profile.prenom || '');
+      setFollowersCount(profile.followers_count || 0);
+      setFollowingCount(profile.following_count || 0);
     } catch {}
     loadPosts();
   }
@@ -90,15 +95,13 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statNum}>{likedPosts.length}</Text>
-              <Text style={styles.statLabel}>J'aime</Text>
+              <Text style={styles.statNum}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Abonnés</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statNum}>
-                {myPosts.reduce((s, p) => s + (p.likes_count || 0), 0)}
-              </Text>
-              <Text style={styles.statLabel}>Likes reçus</Text>
+              <Text style={styles.statNum}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Abonnements</Text>
             </View>
           </View>
 
