@@ -11,6 +11,8 @@ import SearchScreen from '../screens/SearchScreen';
 import CreatePostScreen from '../screens/CreatePostScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import StoryViewerScreen from '../screens/StoryViewerScreen';
+import StoryArchiveScreen from '../screens/StoryArchiveScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -92,6 +94,8 @@ export default function Navigation() {
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+            <Stack.Screen name="StoryViewer" component={StoryViewerScreen} />
+            <Stack.Screen name="StoryArchive" component={StoryArchiveScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

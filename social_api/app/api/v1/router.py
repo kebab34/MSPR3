@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, posts, likes, commentaires, me, users
+from app.api.v1.endpoints import health, posts, likes, commentaires, me, users, stories
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router.include_router(posts.router, prefix="/posts", tags=["posts"])
 api_router.include_router(likes.router, prefix="/posts", tags=["likes"])
 api_router.include_router(commentaires.router, prefix="/posts", tags=["commentaires"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(stories.router, prefix="/stories", tags=["stories"])

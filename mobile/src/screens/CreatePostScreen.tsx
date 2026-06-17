@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Text, TextInput, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, ScrollView, Platform,
-  SafeAreaView, View,
+  SafeAreaView, View, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,7 +17,17 @@ export default function CreatePostScreen() {
   const [successMsg, setSuccessMsg] = useState('');
 
   async function pickImage() {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.8 });
+    if (!result.canceled) setImage(result.assets[0]);
+  }
+
+  async function takePhoto() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', "L'accès à la caméra est nécessaire pour prendre une photo.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.8 });
     if (!result.canceled) setImage(result.assets[0]);
   }
 
@@ -100,10 +110,16 @@ export default function CreatePostScreen() {
           </View>
         ) : null}
 
-        <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
-          <Ionicons name="image-outline" size={20} color="#22c55e" />
-          <Text style={styles.photoBtnText}>{image ? 'Changer la photo' : 'Ajouter une photo'}</Text>
-        </TouchableOpacity>
+        <View style={styles.mediaBtns}>
+          <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
+            <Ionicons name="image-outline" size={20} color="#22c55e" />
+            <Text style={styles.photoBtnText}>{image ? 'Changer' : 'Galerie'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.photoBtn} onPress={takePhoto}>
+            <Ionicons name="camera-outline" size={20} color="#22c55e" />
+            <Text style={styles.photoBtnText}>Caméra</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.submitBtn, (!contenu.trim() || loading) && styles.submitOff]}
@@ -147,12 +163,13 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 10, right: 10,
     backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 13,
   },
+  mediaBtns: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   photoBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center',
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center',
     borderWidth: 1, borderColor: '#22c55e30', borderRadius: 14, borderStyle: 'dashed',
-    padding: 14, marginBottom: 20, backgroundColor: '#22c55e0a',
+    padding: 14, backgroundColor: '#22c55e0a',
   },
-  photoBtnText: { color: '#22c55e', fontSize: 15, fontWeight: '600' },
+  photoBtnText: { color: '#22c55e', fontSize: 14, fontWeight: '600' },
   submitBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#22c55e', borderRadius: 14, paddingVertical: 16,

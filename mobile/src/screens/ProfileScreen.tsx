@@ -5,7 +5,7 @@ import {
   Image, Modal, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../config/supabase';
 import { apiFetch, SOCIAL_API_URL } from '../config/api';
@@ -14,6 +14,7 @@ import Avatar from '../components/Avatar';
 type Tab = 'posts' | 'liked' | 'edit';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
@@ -181,9 +182,12 @@ export default function ProfileScreen() {
 
           {/* Actions rapides */}
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.editBtn} onPress={() => setTab('edit')}>
+            <TouchableOpacity style={[styles.editBtn, { flex: 1 }]} onPress={() => setTab('edit')}>
               <Ionicons name="pencil-outline" size={16} color="#f0f6fc" />
               <Text style={styles.editBtnText}>Modifier le profil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.archiveBtn} onPress={() => navigation.navigate('StoryArchive')}>
+              <Ionicons name="time-outline" size={18} color="#8b949e" />
             </TouchableOpacity>
           </View>
         </View>
@@ -414,13 +418,18 @@ const styles = StyleSheet.create({
   statNum: { fontSize: 22, fontWeight: '800', color: '#f0f6fc' },
   statLabel: { fontSize: 11, color: '#4b5563', marginTop: 2 },
   statDivider: { width: 1, height: 30, backgroundColor: '#21262d' },
-  headerActions: { width: '100%' },
+  headerActions: { width: '100%', flexDirection: 'row', gap: 8 },
   editBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#161b22', borderRadius: 12, paddingVertical: 10,
     borderWidth: 1, borderColor: '#21262d',
   },
   editBtnText: { color: '#f0f6fc', fontWeight: '600', fontSize: 14 },
+  archiveBtn: {
+    width: 42, height: 42, borderRadius: 12,
+    backgroundColor: '#161b22', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: '#21262d',
+  },
   tabBar: {
     flexDirection: 'row', backgroundColor: '#0d1117',
     borderBottomWidth: 1, borderBottomColor: '#21262d',

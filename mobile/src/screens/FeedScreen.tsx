@@ -10,6 +10,7 @@ import { apiFetch } from '../config/api';
 import { supabase } from '../config/supabase';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
+import StoryCircles from '../components/StoryCircles';
 
 export default function FeedScreen() {
   const navigation = useNavigation<any>();
@@ -134,6 +135,7 @@ export default function FeedScreen() {
                 <Ionicons name="refresh" size={18} color="#22c55e" />
               </TouchableOpacity>
             </View>
+            <StoryCircles />
             <View style={styles.feedToggle}>
               <TouchableOpacity
                 style={[styles.feedToggleBtn, feedMode === 'all' && styles.feedToggleBtnActive]}
