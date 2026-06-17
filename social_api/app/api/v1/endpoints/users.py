@@ -8,7 +8,7 @@ router = APIRouter()
 @router.get("/{id_utilisateur}")
 async def get_user_profile(id_utilisateur: str, user: dict = Depends(get_current_profile)):
     admin = get_supabase_admin()
-    res = admin.table("utilisateurs").select("id_utilisateur, nom, prenom, email") \
+    res = admin.table("utilisateurs").select("id_utilisateur, nom, prenom, email, avatar_url") \
         .eq("id_utilisateur", id_utilisateur).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")

@@ -17,7 +17,7 @@ async def list_commentaires(
 ):
     admin = get_supabase_admin()
     res = admin.table("commentaires") \
-        .select("*, utilisateurs(nom, prenom, email)") \
+        .select("*, utilisateurs(nom, prenom, email, avatar_url)") \
         .eq("id_post", id_post) \
         .order("created_at") \
         .execute()

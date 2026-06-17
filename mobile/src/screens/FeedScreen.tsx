@@ -9,6 +9,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { apiFetch } from '../config/api';
 import { supabase } from '../config/supabase';
 import PostCard from '../components/PostCard';
+import Avatar from '../components/Avatar';
 
 export default function FeedScreen() {
   const navigation = useNavigation<any>();
@@ -130,11 +131,11 @@ export default function FeedScreen() {
             keyExtractor={item => item.id_commentaire}
             renderItem={({ item }) => (
               <View style={styles.comment}>
-                <View style={styles.commentAvatar}>
-                  <Text style={styles.commentAvatarText}>
-                    {(item.utilisateurs?.prenom || item.utilisateurs?.email || '?').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar
+                  uri={item.utilisateurs?.avatar_url}
+                  initials={(item.utilisateurs?.prenom || item.utilisateurs?.email || '?')}
+                  size={32}
+                />
                 <View style={styles.commentBubble}>
                   <Text style={styles.commentAuthor}>
                     {item.utilisateurs?.prenom || item.utilisateurs?.email?.split('@')[0] || 'Utilisateur'}

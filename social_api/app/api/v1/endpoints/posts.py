@@ -15,7 +15,7 @@ async def list_posts(
 ):
     admin = get_supabase_admin()
     query = admin.table("posts") \
-        .select("*, utilisateurs(nom, prenom, email), likes(count), commentaires(count)")
+        .select("*, utilisateurs(nom, prenom, email, avatar_url), likes(count), commentaires(count)")
 
     if following:
         follows_res = admin.table("follows").select("id_following") \
@@ -88,7 +88,7 @@ async def liked_posts(user: dict = Depends(get_current_profile)):
     if not ids:
         return []
     res = admin.table("posts") \
-        .select("*, utilisateurs(nom, prenom, email), likes(count), commentaires(count)") \
+        .select("*, utilisateurs(nom, prenom, email, avatar_url), likes(count), commentaires(count)") \
         .in_("id_post", ids).order("created_at", desc=True).execute()
     posts = res.data or []
     for post in posts:

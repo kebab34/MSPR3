@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from pydantic import BaseModel
 from typing import Optional
 from app.api.v1.deps import get_current_profile
@@ -34,3 +34,19 @@ async def update_me(body: ProfileUpdate, user: dict = Depends(get_current_profil
         admin.table("utilisateurs").update(updates)\
             .eq("id_utilisateur", user["id_utilisateur"]).execute()
     return {**user, **updates}
+
+
+@router.post("/avatar")
+async def upload_avatar(file: UploadFile = File(...), user: dict = Depends(get_current_profile)):
+    admin = get_supabase_admin()
+    ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "jpg"
+    path = f"avatars/{user['id_utilisateur']}.{ext}"
+    content = await file.read()
+    admin.storage.from_("media").upload(path, content, {
+        "content-type": file.content_type or "image/jpeg",
+        "x-upsert": "true",
+    })
+    avatar_url = f"{admin.supabase_url}/storage/v1/object/public/media/{path}"
+    admin.table("utilisateurs").update({"avatar_url": avatar_url}) \
+        .eq("id_utilisateur", user["id_utilisateur"]).execute()
+    return {"avatar_url": avatar_url}

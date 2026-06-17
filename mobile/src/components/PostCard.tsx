@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../config/api';
+import Avatar from './Avatar';
 
 const { width } = Dimensions.get('window');
 
@@ -53,9 +54,11 @@ export default function PostCard({ post, onComment, onDelete, onUserPress }: Pos
           activeOpacity={onUserPress ? 0.7 : 1}
           style={styles.avatarGlow}
         >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          <Avatar
+            uri={post.utilisateurs?.avatar_url}
+            initials={initials}
+            size={40}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.headerInfo}

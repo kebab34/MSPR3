@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, SafeAreaView, ActivityIndicator, FlatList,
-  Image, Dimensions, Modal, KeyboardAvoidingView, Platform,
+  ScrollView, SafeAreaView, ActivityIndicator,
+  Image, Dimensions, Modal, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../config/supabase';
-import { apiFetch } from '../config/api';
+import { apiFetch, SOCIAL_API_URL } from '../config/api';
+import Avatar from '../components/Avatar';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 40 - 4) / 3;
@@ -18,6 +20,8 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -37,10 +41,41 @@ export default function ProfileScreen() {
       const profile = await apiFetch('/api/v1/auth/me');
       setNom(profile.nom || '');
       setPrenom(profile.prenom || '');
+      setAvatarUrl(profile.avatar_url || null);
       setFollowersCount(profile.followers_count || 0);
       setFollowingCount(profile.following_count || 0);
     } catch {}
     loadPosts();
+  }
+
+  async function pickAndUploadAvatar() {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setAvatarUploading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const formData = new FormData();
+      if (Platform.OS === 'web') {
+        const resp = await fetch(asset.uri);
+        const blob = await resp.blob();
+        formData.append('file', blob, `avatar.${blob.type.split('/')[1] || 'jpg'}`);
+      } else {
+        const filename = asset.uri.split('/').pop() || 'avatar.jpg';
+        formData.append('file', { uri: asset.uri, name: filename, type: `image/${filename.split('.').pop() || 'jpg'}` } as any);
+      }
+      const res = await fetch(`${SOCIAL_API_URL}/api/v1/auth/me/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setAvatarUrl(json.avatar_url);
+      }
+    } catch {}
+    setAvatarUploading(false);
   }
 
   async function loadPosts() {
@@ -76,11 +111,15 @@ export default function ProfileScreen() {
 
         {/* Header profil */}
         <View style={styles.header}>
-          <View style={styles.avatarGlow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
+          <TouchableOpacity onPress={pickAndUploadAvatar} activeOpacity={0.85} style={styles.avatarWrap}>
+            <Avatar uri={avatarUrl} initials={initials} size={84} withGlow />
+            <View style={styles.avatarEditBadge}>
+              {avatarUploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="camera" size={14} color="#fff" />
+              }
             </View>
-          </View>
+          </TouchableOpacity>
           <Text style={styles.displayName}>{displayName}</Text>
           <View style={styles.emailBadge}>
             <Ionicons name="mail-outline" size={12} color="#4b5563" />
@@ -248,17 +287,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d1117' },
   scroll: { paddingBottom: 110 },
   header: { alignItems: 'center', paddingTop: 24, paddingHorizontal: 20, paddingBottom: 20 },
-  avatarGlow: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: '#22c55e18', justifyContent: 'center', alignItems: 'center', marginBottom: 12,
-  },
-  avatar: {
-    width: 84, height: 84, borderRadius: 42,
+  avatarWrap: { position: 'relative', marginBottom: 12 },
+  avatarEditBadge: {
+    position: 'absolute', bottom: 2, right: 2,
+    width: 26, height: 26, borderRadius: 13,
     backgroundColor: '#22c55e', justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#22c55e', shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5, shadowRadius: 18, elevation: 10,
+    borderWidth: 2, borderColor: '#0d1117',
   },
-  avatarText: { color: '#fff', fontSize: 34, fontWeight: '900' },
   displayName: { fontSize: 22, fontWeight: '800', color: '#f0f6fc', marginBottom: 6 },
   emailBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,

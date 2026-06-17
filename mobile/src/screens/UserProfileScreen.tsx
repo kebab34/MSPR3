@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { apiFetch } from '../config/api';
+import Avatar from '../components/Avatar';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 40 - 4) / 3;
@@ -89,11 +90,7 @@ export default function UserProfileScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.header}>
-            <View style={styles.avatarGlow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
-              </View>
-            </View>
+            <Avatar uri={profile.avatar_url} initials={initials} size={84} withGlow />
             <Text style={styles.displayName}>{displayName}</Text>
             <View style={styles.emailBadge}>
               <Ionicons name="mail-outline" size={12} color="#4b5563" />
