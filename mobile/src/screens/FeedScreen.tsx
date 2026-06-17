@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View, FlatList, RefreshControl, StyleSheet, Text,
   Modal, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, SafeAreaView,
+  Platform, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -21,19 +21,51 @@ export default function FeedScreen() {
   const [currentUserId, setCurrentUserId] = useState('');
   const [sending, setSending] = useState(false);
   const [feedMode, setFeedMode] = useState<'all' | 'following'>('all');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const offsetRef = useRef(0);
+  const LIMIT = 20;
 
   useFocusEffect(useCallback(() => {
     supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id || ''));
-    loadPosts(feedMode);
+    resetAndLoad(feedMode);
   }, [feedMode]));
 
-  async function loadPosts(mode: 'all' | 'following' = feedMode) {
-    const url = mode === 'following' ? '/api/v1/posts?following=true' : '/api/v1/posts';
-    try { setPosts((await apiFetch(url)) || []); } catch {}
+  function buildUrl(mode: 'all' | 'following', offset: number) {
+    const base = mode === 'following' ? '/api/v1/posts?following=true' : '/api/v1/posts?';
+    const sep = mode === 'following' ? '&' : '';
+    return `${base}${sep}limit=${LIMIT}&offset=${offset}`;
+  }
+
+  async function resetAndLoad(mode: 'all' | 'following') {
+    offsetRef.current = 0;
+    setHasMore(true);
+    try {
+      const data = await apiFetch(buildUrl(mode, 0)) || [];
+      setPosts(data);
+      if (data.length < LIMIT) setHasMore(false);
+      offsetRef.current = data.length;
+    } catch {}
+  }
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await apiFetch(buildUrl(feedMode, offsetRef.current)) || [];
+      if (data.length === 0 || data.length < LIMIT) setHasMore(false);
+      if (data.length > 0) {
+        setPosts(prev => [...prev, ...data]);
+        offsetRef.current += data.length;
+      }
+    } catch {}
+    setLoadingMore(false);
   }
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true); await loadPosts(feedMode); setRefreshing(false);
+    setRefreshing(true);
+    await resetAndLoad(feedMode);
+    setRefreshing(false);
   }, [feedMode]);
 
   async function openComments(post: any) {
@@ -76,6 +108,21 @@ export default function FeedScreen() {
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#22c55e" />}
         contentContainerStyle={posts.length === 0 ? styles.emptyContainer : styles.list}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator color="#22c55e" size="small" />
+            </View>
+          ) : !hasMore && posts.length > 0 ? (
+            <View style={styles.endOfFeed}>
+              <View style={styles.endLine} />
+              <Text style={styles.endText}>Vous avez tout vu</Text>
+              <View style={styles.endLine} />
+            </View>
+          ) : null
+        }
         ListHeaderComponent={
           <View>
             <View style={styles.feedHeader}>
@@ -252,4 +299,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#22c55e', justifyContent: 'center', alignItems: 'center',
   },
   sendBtnOff: { backgroundColor: '#1a3a1a' },
+  loadingMore: { paddingVertical: 20, alignItems: 'center' },
+  endOfFeed: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 24, paddingHorizontal: 20,
+  },
+  endLine: { flex: 1, height: 1, backgroundColor: '#21262d' },
+  endText: { fontSize: 12, color: '#4b5563', fontWeight: '600' },
 });
