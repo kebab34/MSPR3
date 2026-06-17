@@ -5,6 +5,26 @@ from app.core.database import get_supabase_admin
 router = APIRouter()
 
 
+@router.get("/search")
+async def search_users(q: str = "", user: dict = Depends(get_current_profile)):
+    if not q.strip():
+        return []
+    admin = get_supabase_admin()
+    q_clean = q.strip()
+    res = admin.table("utilisateurs") \
+        .select("id_utilisateur, nom, prenom, email, avatar_url") \
+        .or_(f"nom.ilike.%{q_clean}%,prenom.ilike.%{q_clean}%,email.ilike.%{q_clean}%") \
+        .neq("id_utilisateur", user["id_utilisateur"]) \
+        .limit(20).execute()
+    results = res.data or []
+    for u in results:
+        is_following_res = admin.table("follows").select("id_follow") \
+            .eq("id_follower", user["id_utilisateur"]) \
+            .eq("id_following", u["id_utilisateur"]).execute()
+        u["is_following"] = len(is_following_res.data) > 0
+    return results
+
+
 @router.get("/{id_utilisateur}")
 async def get_user_profile(id_utilisateur: str, user: dict = Depends(get_current_profile)):
     admin = get_supabase_admin()

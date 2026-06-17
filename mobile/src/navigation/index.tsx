@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../config/supabase';
 import LoginScreen from '../screens/LoginScreen';
 import FeedScreen from '../screens/FeedScreen';
+import SearchScreen from '../screens/SearchScreen';
 import CreatePostScreen from '../screens/CreatePostScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
@@ -17,9 +18,10 @@ const Tab = createBottomTabNavigator();
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TABS: { name: string; active: IoniconsName; inactive: IoniconsName }[] = [
-  { name: 'Fil',     active: 'home',          inactive: 'home-outline' },
-  { name: 'Publier', active: 'add-circle',    inactive: 'add-circle-outline' },
-  { name: 'Profil',  active: 'person-circle', inactive: 'person-circle-outline' },
+  { name: 'Fil',       active: 'home',          inactive: 'home-outline' },
+  { name: 'Recherche', active: 'search',        inactive: 'search-outline' },
+  { name: 'Publier',   active: 'add-circle',    inactive: 'add-circle-outline' },
+  { name: 'Profil',    active: 'person-circle', inactive: 'person-circle-outline' },
 ];
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -59,6 +61,7 @@ function MainTabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Fil" component={FeedScreen} />
+      <Tab.Screen name="Recherche" component={SearchScreen} />
       <Tab.Screen name="Publier" component={CreatePostScreen} />
       <Tab.Screen name="Profil" component={ProfileScreen} />
     </Tab.Navigator>
