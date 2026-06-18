@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, ScrollView, TouchableOpacity, Text, StyleSheet,
-  Modal, ActivityIndicator, Platform, Alert,
+  Modal, ActivityIndicator, Platform, Alert, InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -53,11 +53,15 @@ export default function StoryCircles() {
     } catch {}
   }
 
-  async function createStory(useCamera: boolean) {
+  function handlePickerChoice(useCamera: boolean) {
     setShowPicker(false);
-    // iOS : attendre que le modal soit complètement fermé avant d'ouvrir le picker système
-    await new Promise(r => setTimeout(r, 500));
+    // Attend que toutes les animations (fermeture du modal) soient finies avant d'ouvrir le picker
+    InteractionManager.runAfterInteractions(() => {
+      void doCreateStory(useCamera);
+    });
+  }
 
+  async function doCreateStory(useCamera: boolean) {
     if (useCamera) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -167,7 +171,7 @@ export default function StoryCircles() {
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowPicker(false)} activeOpacity={1}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Créer une story</Text>
-            <TouchableOpacity style={styles.modalOption} onPress={() => createStory(false)}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handlePickerChoice(false)}>
               <View style={styles.modalOptionIcon}>
                 <Ionicons name="images-outline" size={22} color="#22c55e" />
               </View>
@@ -176,7 +180,7 @@ export default function StoryCircles() {
                 <Text style={styles.modalOptionSub}>Choisir une photo</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption} onPress={() => createStory(true)}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handlePickerChoice(true)}>
               <View style={styles.modalOptionIcon}>
                 <Ionicons name="camera-outline" size={22} color="#22c55e" />
               </View>
