@@ -25,6 +25,7 @@ export default function FeedScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const offsetRef = useRef(0);
+  const isResettingRef = useRef(false);
   const LIMIT = 20;
 
   useFocusEffect(useCallback(() => {
@@ -39,6 +40,7 @@ export default function FeedScreen() {
   }
 
   async function resetAndLoad(mode: 'all' | 'following') {
+    isResettingRef.current = true;
     offsetRef.current = 0;
     setHasMore(true);
     try {
@@ -47,16 +49,21 @@ export default function FeedScreen() {
       if (data.length < LIMIT) setHasMore(false);
       offsetRef.current = data.length;
     } catch {}
+    isResettingRef.current = false;
   }
 
   async function loadMore() {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || isResettingRef.current) return;
     setLoadingMore(true);
     try {
       const data = await apiFetch(buildUrl(feedMode, offsetRef.current)) || [];
       if (data.length === 0 || data.length < LIMIT) setHasMore(false);
       if (data.length > 0) {
-        setPosts(prev => [...prev, ...data]);
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id_post));
+          const newPosts = data.filter((p: any) => !existingIds.has(p.id_post));
+          return [...prev, ...newPosts];
+        });
         offsetRef.current += data.length;
       }
     } catch {}

@@ -55,13 +55,19 @@ export default function StoryCircles() {
 
   async function createStory(useCamera: boolean) {
     setShowPicker(false);
-    // iOS: laisser le temps au modal de se fermer avant d'ouvrir le picker système
-    await new Promise(r => setTimeout(r, 350));
+    // iOS : attendre que le modal soit complètement fermé avant d'ouvrir le picker système
+    await new Promise(r => setTimeout(r, 500));
 
     if (useCamera) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission refusée', "L'accès à la caméra est nécessaire pour créer une story.");
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission refusée', "L'accès à la galerie est nécessaire pour créer une story.");
         return;
       }
     }

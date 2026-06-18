@@ -17,6 +17,11 @@ export default function CreatePostScreen() {
   const [successMsg, setSuccessMsg] = useState('');
 
   async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', "L'accès à la galerie est nécessaire.");
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.8 });
     if (!result.canceled) setImage(result.assets[0]);
   }
